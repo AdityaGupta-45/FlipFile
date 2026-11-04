@@ -1,16 +1,50 @@
-# React + Vite
+<p align="center">
+  <img src="docs/logo.svg" alt="FlipFile logo" width="96" />
+</p>
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+<h1 align="center">FlipFile</h1>
 
-Currently, two official plugins are available:
+<p align="center">Flip any file into what you need. Free file conversion tools that run in your browser.</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tools
 
-## React Compiler
+| Tool | What it does |
+| --- | --- |
+| Merge PDF | Combine several PDFs into one file |
+| Split PDF | Pull pages out into separate files |
+| Compress PDF | Make a PDF smaller to share |
+| PDF to JPG | Turn every page into an image |
+| JPG to PDF | Put images into one PDF |
+| PNG to JPG | Convert PNG images to JPG |
+| Compress image | Shrink image size, keep quality |
+| MP4 to MP3 | Extract the audio from a video |
+| Word to PDF | Convert a DOCX file to PDF, layout kept (uses LibreOffice) |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Every conversion shows a live progress bar. Except for Word to PDF, files never leave your device.
 
-## Expanding the Oxlint configuration
+## Built with
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+React, Vite, Tailwind CSS, pdf-lib, pdf.js, JSZip, and a small Express server that runs LibreOffice for Word to PDF.
+
+## Run it locally
+
+1. Install [Node.js](https://nodejs.org) (LTS) and [LibreOffice](https://www.libreoffice.org) (only needed for Word to PDF).
+2. Install the packages:
+   ```bash
+   npm install
+   ```
+3. Start the conversion server in one terminal:
+   ```bash
+   npm run server
+   ```
+4. Start the website in a second terminal:
+   ```bash
+   npm run dev
+   ```
+5. Open http://localhost:5173
+
+## Contact form
+
+The contact form uses [Web3Forms](https://web3forms.com). Put your own access key in `src/pages/Contact.jsx` (the `ACCESS_KEY` line).
+
+Made with Adityaa © 2026
