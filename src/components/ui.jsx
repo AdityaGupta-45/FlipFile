@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { File, FileImage, FileText, Image, Images, Merge, Minimize2, Music, Scissors, Shrink } from "lucide-react";
+import { Camera, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
 
 export function usePageTitle(title) {
   useEffect(() => { document.title = title; }, [title]);
@@ -24,6 +24,15 @@ const icons = {
   "compress-image": Shrink,
   "mp4-to-mp3": Music,
   "word-to-pdf": FileText,
+  "delete-pages": Trash2,
+  "organize-pages": LayoutGrid,
+  "scan-to-pdf": Camera,
+  "rotate-pdf": RotateCw,
+  "page-numbers": Hash,
+  watermark: Droplets,
+  "extract-text": Type,
+  "pdf-viewer": Eye,
+  "compare-pdfs": GitCompare,
 };
 const catColor = { PDF: "#e5484d", Image: "#d98e04", "Audio & Video": "#0e9f8e", Documents: "#3e63dd" };
 

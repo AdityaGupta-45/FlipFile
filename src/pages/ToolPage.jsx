@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { tools } from "../tools.js";
+import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
+import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
 
 const size = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
 const ext = (name) => {
@@ -34,6 +36,7 @@ function Tool({ tool }) {
   const [stage, setStage] = useState("");
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
+  const [pageState, setPageState] = useState([]);
 
   useEffect(() => () => results.forEach((r) => URL.revokeObjectURL(r.url)), [results]);
 
@@ -49,7 +52,8 @@ function Tool({ tool }) {
         : ""
     );
     if (!ok.length) return;
-    setFiles((f) => (tool.multiple ? [...f, ...ok] : [ok[0]]));
+    setFiles((f) => (tool.multiple ? [...f, ...ok] : [ok[0]]).slice(0, tool.max || Infinity));
+    setPageState([]);
     setResults([]);
   };
   const move = (i, d) => {
@@ -62,7 +66,7 @@ function Tool({ tool }) {
     });
     setResults([]);
   };
-  const remove = (i) => { setFiles((f) => f.filter((_, k) => k !== i)); setResults([]); };
+  const remove = (i) => { setFiles((f) => f.filter((_, k) => k !== i)); setPageState([]); setResults([]); };
 
   const run = async () => {
     setBusy(true);
@@ -77,8 +81,8 @@ function Tool({ tool }) {
     };
     try {
       const { processors } = await import("../lib/processors.js");
-      const out = await processors[tool.id](files, values, onProgress);
-      setResults(out.map((o) => ({ name: o.name, size: o.blob.size, url: URL.createObjectURL(o.blob) })));
+      const out = await processors[tool.id](files, { ...values, pageState }, onProgress);
+      setResults(out.map((o) => ({ name: o.name, size: o.blob.size, url: URL.createObjectURL(o.blob), diff: o.diff })));
     } catch (e) {
       setError(e?.message || "Something went wrong. Check the file and try again.");
     } finally {
@@ -88,6 +92,11 @@ function Tool({ tool }) {
 
   const input = "mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2";
   const originalSize = files.reduce((n, f) => n + f.size, 0);
+  const hasDiff = results.some((r) => r.diff);
+
+  let ready = files.length >= min;
+  if (tool.editor === "delete") ready = ready && pageState.some((p) => p.del) && !pageState.every((p) => p.del);
+  if (tool.editor === "organize") ready = ready && pageState.length > 0 && !pageState.every((p) => p.del);
 
   return (
     <section className="mx-auto max-w-3xl py-8">
@@ -110,6 +119,15 @@ function Tool({ tool }) {
         <input type="file" accept={acceptAttr} multiple={!!tool.multiple} hidden disabled={busy}
           onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       </label>
+
+      {tool.hint && <p className="mt-3 text-sm text-[var(--muted)]">{tool.hint}</p>}
+      {tool.camera && (
+        <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-sm font-bold">
+          <Camera size={18} aria-hidden="true" /> Take a photo
+          <input type="file" accept="image/*" capture="environment" hidden disabled={busy}
+            onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
+        </label>
+      )}
 
       {error && <p role="alert" className="mt-3 text-sm font-bold">{error}</p>}
 
@@ -135,6 +153,11 @@ function Tool({ tool }) {
         <p className="mt-3 text-sm text-[var(--muted)]">Add at least {min} files to continue.</p>
       )}
 
+      {files.length > 0 && tool.editor && (
+        <PageEditor file={files[0]} mode={tool.editor} state={pageState} onChange={setPageState} />
+      )}
+      {files.length > 0 && tool.viewer && <PdfViewer file={files[0]} />}
+
       {files.length > 0 && (tool.options || []).map((o) => (
         <label key={o.key} className="mt-4 block">
           <span className="block text-sm font-bold">
@@ -155,13 +178,18 @@ function Tool({ tool }) {
         </label>
       ))}
 
+      {!tool.viewer && (
       <button
         onClick={run}
-        disabled={files.length < min || busy}
+        disabled={!ready || busy}
         className="mt-6 rounded-xl bg-[var(--accent)] px-6 py-3 font-bold text-[var(--on-accent)] disabled:opacity-40"
       >
         {busy ? "Working..." : tool.action}
       </button>
+      )}
+      {tool.editor === "delete" && pageState.length > 0 && !ready && !busy && (
+        <p className="mt-2 text-sm text-[var(--muted)]">Mark at least one page to delete, and keep at least one page.</p>
+      )}
 
       {busy && (
         <div className="mt-6" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Conversion progress">
@@ -178,9 +206,12 @@ function Tool({ tool }) {
       {results.length > 0 && (
         <div className="mt-6" aria-live="polite">
           <p className="font-bold">Done. Your file is ready.</p>
-          <p className="text-sm text-[var(--muted)]">
-            Original {size(originalSize)}, result {size(results.reduce((n, r) => n + r.size, 0))}
-          </p>
+          {!hasDiff && (
+            <p className="text-sm text-[var(--muted)]">
+              Original {size(originalSize)}, result {size(results.reduce((n, r) => n + r.size, 0))}
+            </p>
+          )}
+          {results.map((r) => r.diff && <DiffView key={`diff-${r.name}`} diff={r.diff} />)}
           {results.map((r) => (
             <a key={r.name} href={r.url} download={r.name}
               className="mt-3 block rounded-xl border-2 border-[var(--accent)] px-5 py-3 font-bold">

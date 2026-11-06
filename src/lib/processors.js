@@ -1,10 +1,7 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import JSZip from "jszip";
-import * as pdfjs from "pdfjs-dist";
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import pdfjs from "./pdfjs.js";
 import { Mp3Encoder } from "@breezystack/lamejs";
-
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 // Every processor takes (files, options, onProgress) and returns [{ name, blob }].
 // onProgress(percent, label?) lets the page show a live progress bar.
@@ -133,10 +130,14 @@ async function compressPdf([file], { mode, quality }, onProgress) {
   return [{ name, blob: pdfBlob(bytes) }];
 }
 
-async function pdfToJpg([file], { scale }, onProgress) {
+async function pdfToJpg([file], { scale, format = "jpg" }, onProgress) {
+  const png = format === "png";
   const entries = [];
   await eachPage(file, parseFloat(scale), async (c, n, total) => {
-    entries.push({ name: `${base(file.name)}-page-${n}.jpg`, blob: await toBlob(c, "image/jpeg", 0.92) });
+    entries.push({
+      name: `${base(file.name)}-page-${n}.${png ? "png" : "jpg"}`,
+      blob: await toBlob(c, png ? "image/png" : "image/jpeg", 0.92),
+    });
     onProgress(pct(n, total), `Converting page ${n} of ${total}`);
   });
   const result = entries.length === 1 ? entries : [await zip(entries, `${base(file.name)}-images.zip`)];
@@ -259,6 +260,220 @@ async function wordToPdf([file], _o, onProgress) {
   return [{ name: `${base(file.name)}.pdf`, blob }];
 }
 
+// ---------------------------------------------------------------- Phase 1 tools
+
+const COLORS = { gray: rgb(0.5, 0.5, 0.5), red: rgb(0.85, 0.15, 0.15), blue: rgb(0.17, 0.35, 1), black: rgb(0, 0, 0) };
+
+// pageState comes from the page editor: [{ n: original page index, rot: extra degrees, del: true/false }]
+async function editPages([file], { pageState }, onProgress) {
+  const src = await PDFDocument.load(await file.arrayBuffer());
+  const keep = pageState.filter((p) => !p.del);
+  if (!keep.length) throw new Error("At least one page must stay in the PDF.");
+  const out = await PDFDocument.create();
+  const copied = await out.copyPages(src, keep.map((p) => p.n));
+  copied.forEach((page, i) => {
+    if (keep[i].rot) page.setRotation(degrees((page.getRotation().angle + keep[i].rot) % 360));
+    out.addPage(page);
+    onProgress(pct(i + 1, copied.length, 90), `Adding page ${i + 1} of ${copied.length}`);
+  });
+  const bytes = await out.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-edited.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function rotatePdf([file], { angle, pages }, onProgress) {
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const all = doc.getPages();
+  const idx = pages.trim() ? parseRanges(pages, all.length) : all.map((_, i) => i);
+  idx.forEach((i, k) => {
+    const page = all[i];
+    page.setRotation(degrees((page.getRotation().angle + parseInt(angle)) % 360));
+    onProgress(pct(k + 1, idx.length, 90));
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-rotated.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function addPageNumbers([file], { position, format, start, size }, onProgress) {
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const parsed = parseInt(start);
+  const first = Number.isNaN(parsed) ? 1 : parsed;
+  const fontSize = parseInt(size);
+  const margin = 28;
+  const pages = doc.getPages();
+  const last = first + pages.length - 1;
+  pages.forEach((page, i) => {
+    const num = first + i;
+    const label =
+      format === "page" ? `Page ${num}` : format === "of" ? `Page ${num} of ${last}` : format === "slash" ? `${num} / ${last}` : `${num}`;
+    const { width, height } = page.getSize();
+    const w = font.widthOfTextAtSize(label, fontSize);
+    const [v, h] = position.split("-");
+    const x = h === "left" ? margin : h === "right" ? width - margin - w : (width - w) / 2;
+    const y = v === "top" ? height - margin - fontSize * 0.8 : margin;
+    page.drawText(label, { x, y, size: fontSize, font, color: rgb(0.2, 0.2, 0.2) });
+    onProgress(pct(i + 1, pages.length, 90), `Numbering page ${i + 1} of ${pages.length}`);
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-numbered.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function watermark([file], { text, opacity, size, color, angle }, onProgress) {
+  if (!text.trim()) throw new Error("Type the watermark text first.");
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const deg = parseInt(angle);
+  const rad = (deg * Math.PI) / 180;
+  const pages = doc.getPages();
+  try {
+    font.widthOfTextAtSize(text, 10);
+  } catch {
+    throw new Error("Watermark text supports Latin letters, numbers and common symbols only.");
+  }
+  pages.forEach((page, i) => {
+    const { width, height } = page.getSize();
+    let s = parseInt(size);
+    let w = font.widthOfTextAtSize(text, s);
+    const maxW = (deg === 0 ? width : Math.hypot(width, height)) * 0.85;
+    if (w > maxW) { s = (s * maxW) / w; w = maxW; }
+    const dx = w / 2;
+    const dy = s * 0.3;
+    const x = width / 2 - (dx * Math.cos(rad) - dy * Math.sin(rad));
+    const y = height / 2 - (dx * Math.sin(rad) + dy * Math.cos(rad));
+    page.drawText(text, { x, y, size: s, font, color: COLORS[color], opacity, rotate: degrees(deg) });
+    onProgress(pct(i + 1, pages.length, 90), `Stamping page ${i + 1} of ${pages.length}`);
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-watermarked.pdf`, blob: pdfBlob(bytes) }];
+}
+
+// Text of one page, grouped into lines.
+async function pageLines(pdf, n) {
+  const page = await pdf.getPage(n);
+  const { items } = await page.getTextContent();
+  const lines = [];
+  let cur = "";
+  let lastY = null;
+  const flush = () => {
+    const t = cur.replace(/\s+/g, " ").trim();
+    if (t) lines.push(t);
+    cur = "";
+  };
+  for (const it of items) {
+    if (!("str" in it)) continue;
+    const y = it.transform[5];
+    if (lastY !== null && Math.abs(y - lastY) > 3) flush();
+    if (cur && !cur.endsWith(" ") && !it.str.startsWith(" ")) cur += " ";
+    cur += it.str;
+    lastY = y;
+  }
+  flush();
+  page.cleanup();
+  return lines;
+}
+
+async function extractText([file], { markers }, onProgress) {
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const parts = [];
+  let chars = 0;
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const lines = await pageLines(pdf, n);
+    chars += lines.join("").length;
+    parts.push(markers === "yes" ? `--- Page ${n} ---\n${lines.join("\n")}` : lines.join("\n"));
+    onProgress(pct(n, pdf.numPages), `Reading page ${n} of ${pdf.numPages}`);
+  }
+  if (!chars) throw new Error("No text found. This PDF is probably scanned (just pictures of pages), so it needs OCR first.");
+  onProgress(100);
+  return [{ name: `${base(file.name)}.txt`, blob: new Blob([parts.join("\n\n")], { type: "text/plain;charset=utf-8" }) }];
+}
+
+function applyFilter(canvas, mode) {
+  if (mode === "original") return;
+  const ctx = canvas.getContext("2d");
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    if (mode === "clean") g = Math.max(0, Math.min(255, (g - 60) * 2.2)); // whiter paper, darker ink
+    d[i] = d[i + 1] = d[i + 2] = g;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+async function scanToPdf(files, { filter }, onProgress) {
+  const out = await PDFDocument.create();
+  for (let i = 0; i < files.length; i++) {
+    const c = await imageToCanvas(files[i], 2000);
+    applyFilter(c, filter);
+    const jpg = await out.embedJpg(await (await toBlob(c, "image/jpeg", 0.85)).arrayBuffer());
+    out.addPage([c.width, c.height]).drawImage(jpg, { x: 0, y: 0, width: c.width, height: c.height });
+    onProgress(pct(i + 1, files.length, 90), `Scanning page ${i + 1} of ${files.length}`);
+    await tick();
+  }
+  const bytes = await out.save();
+  onProgress(100);
+  return [{ name: "scan.pdf", blob: pdfBlob(bytes) }];
+}
+
+// Line-by-line difference between two lists of lines.
+function lcsDiff(a, b) {
+  const m = a.length;
+  const n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const ops = [];
+  let i = 0;
+  let j = 0;
+  while (i < m && j < n) {
+    if (a[i] === b[j]) { i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push({ type: "del", text: a[i++] });
+    else ops.push({ type: "add", text: b[j++] });
+  }
+  while (i < m) ops.push({ type: "del", text: a[i++] });
+  while (j < n) ops.push({ type: "add", text: b[j++] });
+  return ops;
+}
+
+async function comparePdfs([fileA, fileB], _o, onProgress) {
+  const open = async (f) => pdfjs.getDocument({ data: await f.arrayBuffer() }).promise;
+  const pa = await open(fileA);
+  const pb = await open(fileB);
+  const total = Math.max(pa.numPages, pb.numPages);
+  const changedPages = [];
+  const report = [];
+  let added = 0;
+  let removed = 0;
+  let seen = 0;
+  for (let n = 1; n <= total; n++) {
+    const A = n <= pa.numPages ? await pageLines(pa, n) : [];
+    const B = n <= pb.numPages ? await pageLines(pb, n) : [];
+    seen += A.length + B.length;
+    const ops = lcsDiff(A, B);
+    if (ops.length) {
+      changedPages.push({ page: n, lines: ops });
+      ops.forEach((o) => (o.type === "add" ? added++ : removed++));
+      report.push(`Page ${n}`, ...ops.map((o) => `${o.type === "add" ? "+ Added:" : "- Removed:"} ${o.text}`), "");
+    }
+    onProgress(pct(n, total), `Comparing page ${n} of ${total}`);
+  }
+  if (!seen) throw new Error("No text found in these PDFs. Scanned PDFs need OCR first.");
+  onProgress(100);
+  const text = changedPages.length ? report.join("\n") : "No text differences found.";
+  return [{
+    name: "comparison-report.txt",
+    blob: new Blob([text], { type: "text/plain;charset=utf-8" }),
+    diff: { pagesA: pa.numPages, pagesB: pb.numPages, changedPages, added, removed },
+  }];
+}
+
 export const processors = {
   "merge-pdf": mergePdf,
   "split-pdf": splitPdf,
@@ -269,4 +484,12 @@ export const processors = {
   "compress-image": compressImage,
   "mp4-to-mp3": mp4ToMp3,
   "word-to-pdf": wordToPdf,
+  "delete-pages": editPages,
+  "organize-pages": editPages,
+  "rotate-pdf": rotatePdf,
+  "page-numbers": addPageNumbers,
+  watermark,
+  "extract-text": extractText,
+  "scan-to-pdf": scanToPdf,
+  "compare-pdfs": comparePdfs,
 };
