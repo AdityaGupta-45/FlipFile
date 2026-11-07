@@ -1,6 +1,7 @@
-import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+import { LineCapStyle, PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import JSZip from "jszip";
 import pdfjs from "./pdfjs.js";
+import { pageRot, viewSize, viewToPdf } from "./geometry.js";
 import { Mp3Encoder } from "@breezystack/lamejs";
 
 // Every processor takes (files, options, onProgress) and returns [{ name, blob }].
@@ -474,6 +475,229 @@ async function comparePdfs([fileA, fileB], _o, onProgress) {
   }];
 }
 
+// ---------------------------------------------------------------- Phase 2 tools
+// pageState comes from the visual editors. Positions are fractions of the page as the user sees it.
+
+const dataUrlBytes = (url) => Uint8Array.from(atob(url.split(",")[1]), (c) => c.charCodeAt(0));
+
+async function cropPdf([file], { scope, pageState }, onProgress) {
+  if (!pageState?.rect) throw new Error("Drag on the page to choose the area you want to keep.");
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const pages = doc.getPages();
+  const targets = scope === "page" ? [pageState.page - 1] : pages.map((_, i) => i);
+  const { u0, v0, u1, v1 } = pageState.rect;
+  targets.forEach((i, k) => {
+    const page = pages[i];
+    const rot = pageRot(page);
+    const box = page.getCropBox();
+    const a = viewToPdf(u0, v0, rot, box);
+    const b = viewToPdf(u1, v1, rot, box);
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
+    const w = Math.abs(a.x - b.x);
+    const h = Math.abs(a.y - b.y);
+    page.setMediaBox(x, y, w, h);
+    page.setCropBox(x, y, w, h);
+    onProgress(pct(k + 1, targets.length, 90), `Cropping page ${k + 1} of ${targets.length}`);
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-cropped.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function signPdf([file], { pageState }, onProgress) {
+  const st = pageState;
+  if (!st?.signature || !st.placements.length) throw new Error("Click on the page to place your signature first.");
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const png = await doc.embedPng(dataUrlBytes(st.signature.url));
+  const pages = doc.getPages();
+  st.placements.forEach((pl, k) => {
+    const page = pages[pl.page - 1];
+    const rot = pageRot(page);
+    const box = page.getCropBox();
+    const vs = viewSize(rot, box);
+    const wPts = st.scale * vs.w;
+    const hPts = wPts * st.signature.ar;
+    const a = viewToPdf(pl.u, pl.v + hPts / vs.h, rot, box);
+    page.drawImage(png, { x: a.x, y: a.y, width: wPts, height: hPts, rotate: degrees(rot) });
+    onProgress(pct(k + 1, st.placements.length, 90), "Placing signature");
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-signed.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function redactPdf([file], { pageState }, onProgress) {
+  const rects = pageState?.rects || [];
+  if (!rects.length) throw new Error("Draw at least one box over the text you want to hide.");
+  const buf = await file.arrayBuffer();
+  const src = await PDFDocument.load(buf.slice(0));
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
+  const out = await PDFDocument.create();
+  const total = src.getPageCount();
+  const scale = 2;
+  for (let i = 0; i < total; i++) {
+    const mine = rects.filter((r) => r.page === i + 1);
+    if (!mine.length) {
+      const [copy] = await out.copyPages(src, [i]);
+      out.addPage(copy);
+    } else {
+      // Redacted pages are rebuilt as pictures so the hidden text is really gone.
+      const pg = await pdf.getPage(i + 1);
+      const vp = pg.getViewport({ scale });
+      const c = document.createElement("canvas");
+      c.width = Math.round(vp.width);
+      c.height = Math.round(vp.height);
+      const ctx = c.getContext("2d");
+      await pg.render({ canvas: c, canvasContext: ctx, viewport: vp, background: "#fff" }).promise;
+      ctx.fillStyle = "#000";
+      mine.forEach((r) => ctx.fillRect(r.u0 * c.width, r.v0 * c.height, (r.u1 - r.u0) * c.width, (r.v1 - r.v0) * c.height));
+      const jpg = await out.embedJpg(await (await toBlob(c, "image/jpeg", 0.92)).arrayBuffer());
+      const size1 = pg.getViewport({ scale: 1 });
+      out.addPage([size1.width, size1.height]).drawImage(jpg, { x: 0, y: 0, width: size1.width, height: size1.height });
+      pg.cleanup();
+    }
+    onProgress(pct(i + 1, total, 90), `Processing page ${i + 1} of ${total}`);
+  }
+  const bytes = await out.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-redacted.pdf`, blob: pdfBlob(bytes) }];
+}
+
+const waitFor = (promise, ms) => Promise.race([promise, new Promise((r) => setTimeout(() => r(null), ms))]);
+const getPdfObject = (page, name) =>
+  waitFor(
+    new Promise((resolve) => {
+      const store = name.startsWith("g_") ? page.commonObjs : page.objs;
+      try { store.get(name, resolve); } catch { resolve(null); }
+    }),
+    4000
+  );
+
+// Turns an image object from pdf.js into a canvas (kind: 1 = 1-bit gray, 2 = RGB, 3 = RGBA).
+function pdfImageToCanvas(img) {
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d");
+  if (img.bitmap) {
+    ctx.drawImage(img.bitmap, 0, 0);
+    return c;
+  }
+  if (!img.data) return null;
+  const out = ctx.createImageData(img.width, img.height);
+  const d = out.data;
+  const src = img.data;
+  const px = img.width * img.height;
+  if (img.kind === 3) {
+    d.set(src.subarray(0, px * 4));
+  } else if (img.kind === 2) {
+    for (let i = 0; i < px; i++) {
+      d[i * 4] = src[i * 3]; d[i * 4 + 1] = src[i * 3 + 1]; d[i * 4 + 2] = src[i * 3 + 2]; d[i * 4 + 3] = 255;
+    }
+  } else if (img.kind === 1) {
+    const rowBytes = (img.width + 7) >> 3;
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        const v = (src[y * rowBytes + (x >> 3)] >> (7 - (x & 7))) & 1 ? 255 : 0;
+        const o = (y * img.width + x) * 4;
+        d[o] = d[o + 1] = d[o + 2] = v;
+        d[o + 3] = 255;
+      }
+    }
+  } else {
+    return null;
+  }
+  ctx.putImageData(out, 0, 0);
+  return c;
+}
+
+async function extractImages([file], { format, minSize }, onProgress) {
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const { OPS } = pdfjs;
+  const min = parseInt(minSize);
+  const png = format === "png";
+  const entries = [];
+  const seen = new Set();
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const page = await pdf.getPage(n);
+    const list = await page.getOperatorList();
+    for (let k = 0; k < list.fnArray.length; k++) {
+      const fn = list.fnArray[k];
+      if (fn !== OPS.paintImageXObject && fn !== OPS.paintInlineImageXObject) continue;
+      const arg = list.argsArray[k][0];
+      let img;
+      if (typeof arg === "string") {
+        if (seen.has(arg)) continue;
+        seen.add(arg);
+        img = await getPdfObject(page, arg);
+      } else {
+        img = arg;
+      }
+      if (!img || img.width < min || img.height < min) continue;
+      const canvas = pdfImageToCanvas(img);
+      if (!canvas) continue;
+      entries.push({
+        name: `${base(file.name)}-page${n}-image${entries.length + 1}.${png ? "png" : "jpg"}`,
+        blob: await toBlob(canvas, png ? "image/png" : "image/jpeg", 0.92),
+      });
+    }
+    page.cleanup();
+    onProgress(pct(n, pdf.numPages), `Looking at page ${n} of ${pdf.numPages}`);
+  }
+  if (!entries.length) {
+    throw new Error("No images found. This PDF may only contain text, or the pictures are smaller than the size you chose to skip.");
+  }
+  const result = entries.length === 1 ? entries : [await zip(entries, `${base(file.name)}-images.zip`)];
+  onProgress(100);
+  return result;
+}
+
+const EDIT_COLORS = {
+  black: rgb(0, 0, 0), red: rgb(0.85, 0.15, 0.15), blue: rgb(0.17, 0.35, 1), green: rgb(0.1, 0.6, 0.3), yellow: rgb(1, 0.9, 0),
+};
+
+async function editPdf([file], { pageState }, onProgress) {
+  const items = pageState?.items || [];
+  if (!items.length) throw new Error("Add some text, a drawing or a highlight first.");
+  const doc = await PDFDocument.load(await file.arrayBuffer());
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const pages = doc.getPages();
+  items.forEach((it, k) => {
+    const page = pages[it.page - 1];
+    const rot = pageRot(page);
+    const box = page.getCropBox();
+    if (it.type === "text") {
+      try {
+        font.widthOfTextAtSize(it.text, it.size);
+      } catch {
+        throw new Error("Text supports Latin letters, numbers and common symbols only.");
+      }
+      const vs = viewSize(rot, box);
+      const a = viewToPdf(it.u, it.v + (0.8 * it.size) / vs.h, rot, box);
+      page.drawText(it.text, { x: a.x, y: a.y, size: it.size, font, color: EDIT_COLORS[it.color], rotate: degrees(rot) });
+    } else if (it.type === "draw") {
+      for (let i = 1; i < it.points.length; i++) {
+        const p = viewToPdf(it.points[i - 1][0], it.points[i - 1][1], rot, box);
+        const q = viewToPdf(it.points[i][0], it.points[i][1], rot, box);
+        page.drawLine({ start: p, end: q, thickness: it.width, color: EDIT_COLORS[it.color], lineCap: LineCapStyle.Round });
+      }
+    } else {
+      const a = viewToPdf(it.u0, it.v0, rot, box);
+      const b = viewToPdf(it.u1, it.v1, rot, box);
+      const white = it.mode === "whiteout";
+      page.drawRectangle({
+        x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y),
+        color: white ? rgb(1, 1, 1) : EDIT_COLORS[it.color], opacity: white ? 1 : 0.35, borderWidth: 0,
+      });
+    }
+    onProgress(pct(k + 1, items.length, 90), `Applying change ${k + 1} of ${items.length}`);
+  });
+  const bytes = await doc.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-edited.pdf`, blob: pdfBlob(bytes) }];
+}
+
 export const processors = {
   "merge-pdf": mergePdf,
   "split-pdf": splitPdf,
@@ -492,4 +716,9 @@ export const processors = {
   "extract-text": extractText,
   "scan-to-pdf": scanToPdf,
   "compare-pdfs": comparePdfs,
+  "crop-pdf": cropPdf,
+  "sign-pdf": signPdf,
+  "redact-pdf": redactPdf,
+  "extract-images": extractImages,
+  "edit-pdf": editPdf,
 };

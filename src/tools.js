@@ -56,6 +56,21 @@ export const tools = [
   { id: "compare-pdfs", name: "Compare PDFs", desc: "See which text changed between two PDFs.", cat: "PDF", accepts: ["pdf"], multiple: true, ordered: true, min: 2, max: 2, from: "PDF", to: "PDF", live: true, action: "Compare PDFs",
     hint: "Add two PDFs. The first is the original and the second is the changed version. Use Up and Down to swap them." },
 
+  // ---- Phase 2: visual tools
+  { id: "sign-pdf", name: "Sign PDF", desc: "Draw or upload your signature and place it on any page.", cat: "PDF", accepts: ["pdf"], editor: "sign", from: "PDF", to: "PDF", live: true, action: "Sign PDF",
+    hint: "This adds an image of your signature. It is not a legal digital certificate." },
+  { id: "crop-pdf", name: "Crop PDF", desc: "Trim the margins and keep only the area you choose.", cat: "PDF", accepts: ["pdf"], editor: "crop", from: "PDF", to: "PDF", live: true, action: "Crop PDF",
+    options: [{ key: "scope", label: "Apply the crop to", type: "select", default: "all", choices: [["all", "All pages"], ["page", "Only the page I drew on"]] }] },
+  { id: "redact-pdf", name: "Redact PDF", desc: "Black out private text or images for good.", cat: "PDF", accepts: ["pdf"], editor: "redact", from: "PDF", to: "PDF", live: true, action: "Redact PDF",
+    hint: "Pages with black boxes are turned into images, so the hidden text cannot be copied. Other pages stay as they are." },
+  { id: "extract-images", name: "Extract Images", desc: "Save every picture inside a PDF.", cat: "PDF", accepts: ["pdf"], from: "PDF", to: "Images", live: true, action: "Extract images",
+    options: [
+      { key: "format", label: "Image format", type: "select", default: "png", choices: [["png", "PNG (best quality)"], ["jpg", "JPG (smaller files)"]] },
+      { key: "minSize", label: "Skip small images (icons, lines)", type: "select", default: "50", choices: [["0", "Keep everything"], ["50", "Skip under 50 px"], ["150", "Skip under 150 px"]] },
+    ] },
+  { id: "edit-pdf", name: "Edit PDF", desc: "Add text, drawings, highlights and white-out boxes.", cat: "PDF", accepts: ["pdf"], editor: "edit", from: "PDF", to: "PDF", live: true, action: "Save edited PDF",
+    hint: "You can add new content. Text that is already in the PDF cannot be changed." },
+
   // ---- Images and audio
   { id: "png-to-jpg", name: "PNG to JPG", desc: "Convert PNG images to JPG.", cat: "Image", accepts: ["png", "webp"], multiple: true, from: "PNG", to: "JPG", live: true, action: "Convert to JPG",
     options: [quality(0.92)] },

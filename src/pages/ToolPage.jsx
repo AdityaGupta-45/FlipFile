@@ -4,6 +4,7 @@ import { tools } from "../tools.js";
 import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
 import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
+import { VisualEditor, editorReady } from "../components/VisualEditors.jsx";
 
 const size = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
 const ext = (name) => {
@@ -27,6 +28,8 @@ export default function ToolPage() {
 }
 
 function Tool({ tool }) {
+  const isPageEditor = tool.editor === "delete" || tool.editor === "organize";
+  const emptyEditor = isPageEditor ? [] : null;
   const [files, setFiles] = useState([]);
   const [values, setValues] = useState(() =>
     Object.fromEntries((tool.options || []).map((o) => [o.key, o.default]))
@@ -36,7 +39,7 @@ function Tool({ tool }) {
   const [stage, setStage] = useState("");
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
-  const [pageState, setPageState] = useState([]);
+  const [pageState, setPageState] = useState(emptyEditor);
 
   useEffect(() => () => results.forEach((r) => URL.revokeObjectURL(r.url)), [results]);
 
@@ -53,7 +56,7 @@ function Tool({ tool }) {
     );
     if (!ok.length) return;
     setFiles((f) => (tool.multiple ? [...f, ...ok] : [ok[0]]).slice(0, tool.max || Infinity));
-    setPageState([]);
+    setPageState(emptyEditor);
     setResults([]);
   };
   const move = (i, d) => {
@@ -66,7 +69,7 @@ function Tool({ tool }) {
     });
     setResults([]);
   };
-  const remove = (i) => { setFiles((f) => f.filter((_, k) => k !== i)); setPageState([]); setResults([]); };
+  const remove = (i) => { setFiles((f) => f.filter((_, k) => k !== i)); setPageState(emptyEditor); setResults([]); };
 
   const run = async () => {
     setBusy(true);
@@ -97,6 +100,7 @@ function Tool({ tool }) {
   let ready = files.length >= min;
   if (tool.editor === "delete") ready = ready && pageState.some((p) => p.del) && !pageState.every((p) => p.del);
   if (tool.editor === "organize") ready = ready && pageState.length > 0 && !pageState.every((p) => p.del);
+  if (tool.editor && !isPageEditor) ready = ready && editorReady(tool.editor, pageState);
 
   return (
     <section className="mx-auto max-w-3xl py-8">
@@ -153,8 +157,11 @@ function Tool({ tool }) {
         <p className="mt-3 text-sm text-[var(--muted)]">Add at least {min} files to continue.</p>
       )}
 
-      {files.length > 0 && tool.editor && (
+      {files.length > 0 && isPageEditor && (
         <PageEditor file={files[0]} mode={tool.editor} state={pageState} onChange={setPageState} />
+      )}
+      {files.length > 0 && tool.editor && !isPageEditor && (
+        <VisualEditor kind={tool.editor} file={files[0]} state={pageState} onChange={setPageState} />
       )}
       {files.length > 0 && tool.viewer && <PdfViewer file={files[0]} />}
 

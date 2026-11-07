@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Camera, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
+import { Camera, Crop, EyeOff, ImageDown, Pencil, PenTool, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
 
 export function usePageTitle(title) {
   useEffect(() => { document.title = title; }, [title]);
@@ -33,6 +33,11 @@ const icons = {
   "extract-text": Type,
   "pdf-viewer": Eye,
   "compare-pdfs": GitCompare,
+  "sign-pdf": PenTool,
+  "crop-pdf": Crop,
+  "redact-pdf": EyeOff,
+  "extract-images": ImageDown,
+  "edit-pdf": Pencil,
 };
 const catColor = { PDF: "#e5484d", Image: "#d98e04", "Audio & Video": "#0e9f8e", Documents: "#3e63dd" };
 
