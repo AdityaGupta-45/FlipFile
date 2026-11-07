@@ -246,7 +246,11 @@ function convertOnServer(file, onProgress) {
     };
     xhr.onerror = () => {
       clearInterval(timer);
-      reject(new Error("Could not reach the conversion server. Start it with: npm run server"));
+      reject(new Error(
+        import.meta.env.PROD && !API
+          ? "Word to PDF is not available on this site yet. All the other tools work."
+          : "Could not reach the conversion server. Start it with: npm run server"
+      ));
     };
 
     const form = new FormData();
