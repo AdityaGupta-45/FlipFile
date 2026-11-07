@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { categories, tools } from "../tools.js";
+import { HOME_DESC, HOME_TITLE } from "../lib/seo.js";
 import { Logo, ToolIcon, usePageTitle } from "../components/ui.jsx";
 
 const FORMATS = ["PDF", "JPG", "MP3", "DOCX", "PNG"];
@@ -20,7 +21,7 @@ function FlipChip() {
 }
 
 export default function Home() {
-  usePageTitle("FlipFile | All your file conversion tools in one place");
+  usePageTitle(HOME_TITLE, HOME_DESC);
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const searchRef = useRef(null);

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { usePageTitle } from "../components/ui.jsx";
+import { PAGE_SEO } from "../lib/seo.js";
 
 const pages = {
   privacy: {
@@ -42,7 +43,7 @@ const pages = {
 
 export default function Info({ page }) {
   const p = pages[page];
-  usePageTitle(`${p.title} | FlipFile`);
+  usePageTitle(PAGE_SEO[page].title, PAGE_SEO[page].description);
   return (
     <section className="mx-auto max-w-2xl py-12">
       <Link to="/" className="text-sm text-[var(--muted)]">Back to all tools</Link>

@@ -1,8 +1,11 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { setMeta } from "../lib/seo.js";
 import { Camera, Crop, EyeOff, ImageDown, Pencil, PenTool, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
 
-export function usePageTitle(title) {
-  useEffect(() => { document.title = title; }, [title]);
+export function usePageTitle(title, description) {
+  const { pathname } = useLocation();
+  useEffect(() => { setMeta({ title, description, path: pathname }); }, [title, description, pathname]);
 }
 
 export function Logo({ className = "h-7 w-6" }) {

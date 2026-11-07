@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePageTitle } from "../components/ui.jsx";
+import { PAGE_SEO } from "../lib/seo.js";
 
 const EMAIL = "adityagupta1212349@gmail.com";
 // Messages are emailed to you by Web3Forms (free, 250 per month). To get your access key:
 // go to web3forms.com, enter your email, and paste the key that arrives in your inbox below.
 // The key is safe to keep in public code.
-const ACCESS_KEY = "6a82df93-c26b-4458-9754-d29366a3bdf6";
+const ACCESS_KEY = "PASTE_YOUR_ACCESS_KEY_HERE";
 
 const socials = [
   {
@@ -29,7 +30,7 @@ const socials = [
 const field = "mt-1.5 w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3";
 
 export default function Contact() {
-  usePageTitle("Contact | FlipFile");
+  usePageTitle(PAGE_SEO.contact.title, PAGE_SEO.contact.description);
   const [status, setStatus] = useState("idle"); // idle, sending, sent, error
   const [error, setError] = useState("");
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { tools } from "../tools.js";
+import { toolSeo } from "../lib/seo.js";
 import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
 import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
@@ -15,7 +16,8 @@ const ext = (name) => {
 export default function ToolPage() {
   const { id } = useParams();
   const tool = tools.find((t) => t.id === id);
-  usePageTitle(tool ? `${tool.name} | ${tool.desc}` : "Tool not found | FlipFile");
+  const seo = tool ? toolSeo(tool) : { title: "Tool not found | FlipFile", description: "This tool does not exist." };
+  usePageTitle(seo.title, seo.description);
   if (!tool) {
     return (
       <section className="py-10">
