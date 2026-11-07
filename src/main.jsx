@@ -6,8 +6,8 @@ import "./index.css";
 
 let saved = null;
 try { saved = localStorage.getItem("flipfile-theme"); } catch { /* storage blocked */ }
-document.documentElement.dataset.theme =
-  saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+// Light is the default. Dark only opens if the visitor chose it earlier with the toggle.
+document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
