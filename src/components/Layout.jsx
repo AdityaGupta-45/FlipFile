@@ -8,25 +8,43 @@ import { Logo, ToolIcon } from "./ui.jsx";
 const quick = ["merge-pdf", "split-pdf", "compress-pdf"].map((id) => tools.find((t) => t.id === id));
 const linkClass = "rounded-lg px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]";
 
-const convertGroups = [
-  { title: "Convert to PDF", items: tools.filter((t) => t.to === "PDF" && t.from !== "PDF") },
-  { title: "Convert from PDF", items: tools.filter((t) => t.from === "PDF" && t.to !== "PDF") },
-  { title: "Other conversions", items: tools.filter((t) => t.from !== "PDF" && t.to !== "PDF" && t.from !== t.to) },
-].filter((g) => g.items.length);
+const byCategory = (c) => ({ title: c, items: tools.filter((t) => t.cat === c) });
+const convertGroups = ["Convert to PDF", "Convert from PDF", "Images and Media"].map(byCategory);
+const allGroups = categories.filter((c) => c !== "All").map(byCategory).filter((g) => g.items.length);
 
-const allGroups = categories
-  .filter((c) => c !== "All")
-  .map((c) => ({ title: c, items: tools.filter((t) => t.cat === c) }))
-  .filter((g) => g.items.length);
+function Groups({ groups, onPick, className }) {
+  return (
+    <div className={className}>
+      {groups.map((g) => (
+        <div key={g.title}>
+          <p className="mb-2 px-2 text-xs font-bold text-[var(--muted)]">{g.title}</p>
+          {g.items.map((t) => (
+            <Link
+              key={t.id}
+              to={`/${t.id}`}
+              onClick={onPick}
+              className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-[var(--bg)]"
+            >
+              <ToolIcon tool={t} size={16} pad={14} />
+              {t.name}
+            </Link>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Opens when the cursor hovers over it (or on click/keyboard for touch and keyboard users).
-function MegaMenu({ label, groups, showAll }) {
+// "wide" menus stretch across the whole header, like a mega menu.
+function MegaMenu({ label, groups, wide }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const timer = useRef(null);
 
   const show = () => { clearTimeout(timer.current); setOpen(true); };
   const hide = () => { clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(false), 150); };
+  const close = () => setOpen(false);
 
   useEffect(() => {
     const outside = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
@@ -43,7 +61,7 @@ function MegaMenu({ label, groups, showAll }) {
   return (
     <div
       ref={ref}
-      className="relative"
+      className={wide ? "" : "relative"}
       onMouseEnter={show}
       onMouseLeave={hide}
       onBlur={(e) => { if (!ref.current.contains(e.relatedTarget)) setOpen(false); }}
@@ -58,39 +76,26 @@ function MegaMenu({ label, groups, showAll }) {
         <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && wide && (
+        <div className="absolute inset-x-0 top-full z-30">
+          <div className="border-b border-[var(--line)] bg-[var(--panel)] shadow-xl">
+            <div className="mx-auto max-w-6xl px-5 py-6">
+              <Groups groups={groups} onPick={close} className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4 xl:grid-cols-7" />
+              <Link to="/tools" onClick={close} className="mt-5 inline-block px-2 text-sm font-bold text-[var(--accent)]">
+                See all tools
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {open && !wide && (
         <div className="absolute right-0 top-full z-30 pt-2">
           <div
             className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-xl"
             style={{ width: `min(92vw, ${groups.length * 220 + 40}px)` }}
           >
-            <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))` }}>
-              {groups.map((g) => (
-                <div key={g.title}>
-                  <p className="mb-2 px-2 text-xs font-bold text-[var(--muted)]">{g.title}</p>
-                  {g.items.map((t) => (
-                    <Link
-                      key={t.id}
-                      to={`/${t.id}`}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-[var(--bg)]"
-                    >
-                      <ToolIcon tool={t} size={16} pad={14} />
-                      {t.name}
-                    </Link>
-                  ))}
-                </div>
-              ))}
-            </div>
-            {showAll && (
-              <Link
-                to="/tools"
-                onClick={() => setOpen(false)}
-                className="mt-4 block border-t border-[var(--line)] px-2 pt-3 text-sm font-bold text-[var(--accent)]"
-              >
-                See all tools
-              </Link>
-            )}
+            <Groups groups={groups} onPick={close} className="grid gap-x-6 gap-y-4" />
           </div>
         </div>
       )}
@@ -155,7 +160,7 @@ export function Header() {
             <Link key={t.id} to={`/${t.id}`} className={linkClass}>{t.name}</Link>
           ))}
           <MegaMenu label="Convert" groups={convertGroups} />
-          <MegaMenu label="All tools" groups={allGroups} showAll />
+          <MegaMenu label="All tools" groups={allGroups} wide />
           <ThemeToggle theme={theme} onClick={toggleTheme} />
         </nav>
 
@@ -168,11 +173,16 @@ export function Header() {
       </div>
 
       {menu && (
-        <nav className="border-t border-[var(--line)] px-5 py-3 md:hidden" aria-label="Mobile">
-          {tools.map((t) => (
-            <Link key={t.id} to={`/${t.id}`} onClick={() => setMenu(false)} className="block py-2 text-sm">
-              {t.name}
-            </Link>
+        <nav className="max-h-[75vh] overflow-y-auto border-t border-[var(--line)] px-5 py-3 md:hidden" aria-label="Mobile">
+          {allGroups.map((g) => (
+            <div key={g.title} className="py-2">
+              <p className="text-xs font-bold text-[var(--muted)]">{g.title}</p>
+              {g.items.map((t) => (
+                <Link key={t.id} to={`/${t.id}`} onClick={() => setMenu(false)} className="block py-1.5 text-sm">
+                  {t.name}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
       )}

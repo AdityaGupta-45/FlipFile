@@ -42,7 +42,15 @@ const icons = {
   "extract-images": ImageDown,
   "edit-pdf": Pencil,
 };
-const catColor = { PDF: "#e5484d", Image: "#d98e04", "Audio & Video": "#0e9f8e", Documents: "#3e63dd" };
+const catColor = {
+  "Organize PDF": "#e5484d",
+  "Optimize PDF": "#0e9f8e",
+  "Convert to PDF": "#e5740b",
+  "Convert from PDF": "#0b8bd9",
+  "Edit PDF": "#a855c8",
+  "PDF Security": "#3e63dd",
+  "Images and Media": "#2f9e6a",
+};
 
 export function ToolIcon({ tool, size = 24, pad = 24 }) {
   const Icon = icons[tool.id] || File;
