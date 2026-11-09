@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { tools } from "../tools.js";
 import { toolSeo } from "../lib/seo.js";
+import { toolContent } from "../lib/toolContent.js";
 import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
 import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
@@ -229,6 +230,30 @@ function Tool({ tool }) {
           ))}
         </div>
       )}
+      <ToolGuide tool={tool} />
+    </section>
+  );
+}
+
+
+function ToolGuide({ tool }) {
+  const c = toolContent[tool.id];
+  if (!c) return null;
+  return (
+    <section className="mt-14 border-t border-[var(--line)] pt-10">
+      <h2 className="display text-2xl font-extrabold">How to use {tool.name}</h2>
+      <ol className="mt-4 list-decimal space-y-2 pl-5 text-[var(--muted)]">
+        {c.steps.map((step) => <li key={step}>{step}</li>)}
+      </ol>
+      <h2 className="display mt-10 text-2xl font-extrabold">About {tool.name}</h2>
+      <p className="mt-3 leading-relaxed text-[var(--muted)]">{c.about}</p>
+      <h2 className="display mt-10 text-2xl font-extrabold">Frequently asked questions</h2>
+      {c.faq.map(([q, a]) => (
+        <div key={q} className="mt-4">
+          <h3 className="font-bold">{q}</h3>
+          <p className="mt-1 text-[var(--muted)]">{a}</p>
+        </div>
+      ))}
     </section>
   );
 }

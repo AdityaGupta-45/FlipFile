@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { tools } from "../src/tools.js";
+import { toolContent } from "../src/lib/toolContent.js";
 import { HOME_DESC, HOME_TITLE, PAGE_SEO, SITE_NAME, SITE_URL, canonicalUrl, toolSeo } from "../src/lib/seo.js";
 
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../dist");
@@ -24,7 +25,17 @@ const toolLd = (t, url, description) => ({
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 });
 
-function render({ route, canonical = route, title, description, heading, jsonLd }) {
+function guideHtml(t) {
+  const c = t && toolContent[t.id];
+  if (!c) return "";
+  return (
+    `<h2>How to use ${esc(t.name)}</h2><ol>${c.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` +
+    `<h2>About ${esc(t.name)}</h2><p>${esc(c.about)}</p>` +
+    `<h2>Frequently asked questions</h2>${c.faq.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join("")}`
+  );
+}
+
+function render({ route, canonical = route, title, description, heading, jsonLd, tool }) {
   const url = canonicalUrl(canonical);
   const image = `${SITE_URL}/social-preview.png`;
   let html = template;
@@ -48,7 +59,7 @@ function render({ route, canonical = route, title, description, heading, jsonLd 
   const links = tools.map((t) => `<li><a href="/${t.id}">${esc(t.name)}</a></li>`).join("");
   html = html.replace(
     '<div id="root"></div>',
-    () => `<div id="root"></div>\n    <noscript><h1>${esc(heading)}</h1><p>${esc(description)}</p><ul>${links}</ul></noscript>`
+    () => `<div id="root"></div>\n    <noscript><h1>${esc(heading)}</h1><p>${esc(description)}</p>${guideHtml(tool)}<ul>${links}</ul></noscript>`
   );
   return html;
 }
@@ -59,7 +70,7 @@ const pages = [
   ...Object.entries(PAGE_SEO).map(([key, s]) => ({ route: `/${key}`, ...s, heading: s.title.split(" | ")[0], jsonLd: websiteLd })),
   ...tools.map((t) => {
     const seo = toolSeo(t);
-    return { route: `/${t.id}`, ...seo, heading: t.name, jsonLd: toolLd(t, canonicalUrl(`/${t.id}`), seo.description) };
+    return { route: `/${t.id}`, ...seo, heading: t.name, tool: t, jsonLd: toolLd(t, canonicalUrl(`/${t.id}`), seo.description) };
   }),
 ];
 

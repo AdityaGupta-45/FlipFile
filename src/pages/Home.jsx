@@ -60,8 +60,8 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative block lg:w-96">
+        <div className="flex flex-col gap-4">
+          <label className="relative block w-full sm:max-w-md">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden="true" />
             <input
               ref={searchRef}
@@ -73,13 +73,13 @@ export default function Home() {
               className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] py-3 pl-11 pr-4"
             />
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCat(c)}
                 aria-pressed={cat === c}
-                className={`rounded-lg border px-4 py-2 text-sm ${
+                className={`shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm ${
                   cat === c
                     ? "border-[var(--ink)] bg-[var(--ink)] font-bold text-[var(--bg)]"
                     : "border-[var(--line)] bg-[var(--panel)] text-[var(--muted)]"
