@@ -7,7 +7,7 @@ const EMAIL = "adityagupta1212349@gmail.com";
 // Messages are emailed to you by Web3Forms (free, 250 per month). To get your access key:
 // go to web3forms.com, enter your email, and paste the key that arrives in your inbox below.
 // The key is safe to keep in public code.
-const ACCESS_KEY = "PASTE_YOUR_ACCESS_KEY_HERE";
+const ACCESS_KEY = "6a82df93-c26b-4458-9754-d29366a3bdf6";
 
 const socials = [
   {
