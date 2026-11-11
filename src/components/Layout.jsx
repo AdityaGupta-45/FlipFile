@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { categories, tools } from "../tools.js";
 import { Logo, ToolIcon } from "./ui.jsx";
 import { isComingSoon } from "../lib/server.js";
 
 const quick = ["merge-pdf", "split-pdf", "compress-pdf"].map((id) => tools.find((t) => t.id === id));
-const linkClass = "rounded-lg px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]";
+const linkClass = "rounded-xl px-4 py-2 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--soft)] hover:text-[var(--ink)]";
+const activeClass = "bg-[var(--soft)] text-[var(--ink)]";
 
 const byCategory = (c) => ({ title: c, items: tools.filter((t) => t.cat === c) });
 const convertGroups = ["Convert to PDF", "Convert from PDF"].map(byCategory);
@@ -24,7 +25,7 @@ function Groups({ groups, onPick, className, large }) {
               key={t.id}
               to={`/${t.id}`}
               onClick={onPick}
-              className={`flex items-center gap-3 rounded-lg px-2 hover:bg-[var(--bg)] ${large ? "py-2.5 text-[15px]" : "py-2 text-sm"}`}
+              className={`flex items-center gap-3 rounded-lg px-2 hover:bg-[var(--soft)] ${large ? "py-2.5 text-[15px]" : "py-2 text-sm"}`}
             >
               <ToolIcon tool={t} size={large ? 18 : 16} pad={large ? 18 : 14} />
               {t.name}
@@ -74,7 +75,7 @@ function MegaMenu({ label, groups, wide }) {
         onClick={show}
         aria-expanded={open}
         aria-haspopup="true"
-        className={`${linkClass} flex items-center gap-1 ${open ? "bg-[var(--bg)] text-[var(--ink)]" : ""}`}
+        className={`${linkClass} flex items-center gap-1 ${open ? activeClass : ""}`}
       >
         {label}
         <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -158,7 +159,7 @@ export function Header() {
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
           {quick.map((t) => (
-            <Link key={t.id} to={`/${t.id}`} className={linkClass}>{t.name}</Link>
+            <NavLink key={t.id} to={`/${t.id}`} className={({ isActive }) => `${linkClass} ${isActive ? activeClass : ""}`}>{t.name}</NavLink>
           ))}
           <MegaMenu label="Convert PDF" groups={convertGroups} />
           <MegaMenu label="All tools" groups={allGroups} wide />

@@ -8,6 +8,7 @@
   --ink: #0f1b2d;
   --muted: #55657a;
   --line: #d9e0ea;
+  --soft: #eceff4;
   --accent: #2b59ff;
   --on-accent: #ffffff;
   --chip: #ffd23f;
@@ -19,6 +20,7 @@
   --ink: #eaf0fa;
   --muted: #93a3ba;
   --line: #24324a;
+  --soft: #1e2d49;
   --accent: #7c9bff;
   --on-accent: #0e1626;
 }

@@ -80,10 +80,10 @@ export default function Home() {
                 key={c}
                 onClick={() => setCat(c)}
                 aria-pressed={cat === c}
-                className={`shrink-0 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-sm ${
+                className={`shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm transition-colors ${
                   cat === c
                     ? "border-[var(--ink)] bg-[var(--ink)] font-bold text-[var(--bg)]"
-                    : "border-[var(--line)] bg-[var(--panel)] text-[var(--muted)]"
+                    : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:bg-[var(--soft)]"
                 }`}
               >
                 {c}
