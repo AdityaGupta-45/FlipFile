@@ -17,7 +17,7 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 pb-10">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-10">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tools" element={<Home />} />

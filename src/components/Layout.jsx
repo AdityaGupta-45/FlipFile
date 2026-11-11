@@ -40,8 +40,8 @@ function Groups({ groups, onPick, className }) {
 }
 
 // Opens when the cursor hovers over it (or on click/keyboard for touch and keyboard users).
-// "wide" menus stretch across the whole header, like a mega menu.
-function MegaMenu({ label, groups, wide }) {
+// Both menus stretch across the whole header, like a mega menu.
+function MegaMenu({ label, groups }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const timer = useRef(null);
@@ -65,7 +65,6 @@ function MegaMenu({ label, groups, wide }) {
   return (
     <div
       ref={ref}
-      className={wide ? "" : "relative"}
       onMouseEnter={show}
       onMouseLeave={hide}
       onBlur={(e) => { if (!ref.current.contains(e.relatedTarget)) setOpen(false); }}
@@ -80,26 +79,15 @@ function MegaMenu({ label, groups, wide }) {
         <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && wide && (
+      {open && (
         <div className="absolute inset-x-0 top-full z-30">
           <div className="border-b border-[var(--line)] bg-[var(--panel)] shadow-xl">
-            <div className="mx-auto max-w-6xl px-5 py-6">
+            <div className="mx-auto max-w-7xl px-5 py-6">
               <Groups groups={groups} onPick={close} className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4 xl:grid-cols-7" />
               <Link to="/tools" onClick={close} className="mt-5 inline-block px-2 text-sm font-bold text-[var(--accent)]">
                 See all tools
               </Link>
             </div>
-          </div>
-        </div>
-      )}
-
-      {open && !wide && (
-        <div className="absolute right-0 top-full z-30 pt-2">
-          <div
-            className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-xl"
-            style={{ width: `min(92vw, ${groups.length * 220 + 40}px)` }}
-          >
-            <Groups groups={groups} onPick={close} className="grid gap-x-6 gap-y-4" />
           </div>
         </div>
       )}
@@ -153,7 +141,7 @@ export function Header() {
 
   return (
     <header className="relative z-20 border-b border-[var(--line)] bg-[var(--panel)]">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Link to="/" className="display flex items-center gap-2 text-xl font-extrabold tracking-tight">
           <Logo />
           flip<span className="-ml-1.5 rounded bg-[var(--chip)] px-1.5 text-[#0f1b2d]">file</span>
@@ -164,7 +152,7 @@ export function Header() {
             <Link key={t.id} to={`/${t.id}`} className={linkClass}>{t.name}</Link>
           ))}
           <MegaMenu label="Convert" groups={convertGroups} />
-          <MegaMenu label="All tools" groups={allGroups} wide />
+          <MegaMenu label="All tools" groups={allGroups} />
           <ThemeToggle theme={theme} onClick={toggleTheme} />
         </nav>
 

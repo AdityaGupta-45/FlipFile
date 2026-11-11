@@ -61,26 +61,26 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="flex flex-col gap-4">
-          <label className="relative block w-full sm:max-w-md">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <label className="relative block w-full shrink-0 lg:w-52">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden="true" />
             <input
               ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by task or format..."
+              placeholder="Search tools..."
               aria-label="Search tools"
               className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] py-3 pl-11 pr-4"
             />
           </label>
-          <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-0 flex-1 flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCat(c)}
                 aria-pressed={cat === c}
-                className={`shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm ${
+                className={`shrink-0 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-sm ${
                   cat === c
                     ? "border-[var(--ink)] bg-[var(--ink)] font-bold text-[var(--bg)]"
                     : "border-[var(--line)] bg-[var(--panel)] text-[var(--muted)]"
