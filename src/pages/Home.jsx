@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { categories, tools } from "../tools.js";
 import { HOME_DESC, HOME_TITLE } from "../lib/seo.js";
+import { isComingSoon } from "../lib/server.js";
 import { Logo, ToolIcon, usePageTitle } from "../components/ui.jsx";
 
 const FORMATS = ["PDF", "JPG", "MP3", "DOCX", "PNG"];
@@ -104,7 +105,12 @@ export default function Home() {
                 className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6 hover:border-[var(--accent)]"
               >
                 <ToolIcon tool={t} />
-                <span className="display mt-5 block text-lg font-bold">{t.name}</span>
+                <span className="display mt-5 block text-lg font-bold">
+                  {t.name}
+                  {isComingSoon(t) && (
+                    <span className="ml-2 rounded bg-[var(--chip)] px-1.5 py-0.5 align-middle text-xs font-bold text-[#0f1b2d]">Soon</span>
+                  )}
+                </span>
                 <span className="mt-1 block text-sm text-[var(--muted)]">{t.desc}</span>
               </Link>
             ))}

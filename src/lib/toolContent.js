@@ -184,4 +184,60 @@ export const toolContent = {
       ["Why did it fail on my video?", "Your browser may not be able to read that video's audio. Try Chrome or a different file. Very large videos can also run out of memory."],
     ],
   },
+  "excel-to-pdf": {
+    about: "Excel to PDF converts a spreadsheet into a PDF using LibreOffice on the FlipFile server.",
+    steps: ["Add your .xlsx, .xls, .ods or .csv file.", "Click Convert to PDF and watch the progress bar.", "Download the PDF."],
+    faq: [
+      ["Is my file uploaded?", "Yes. This tool sends your file to the FlipFile server, which converts it and then deletes it."],
+      ["Why are my columns split across pages?", "The PDF follows the page size and print settings of the spreadsheet. Set the print area and page layout in your spreadsheet program for the best result."],
+    ],
+  },
+  "powerpoint-to-pdf": {
+    about: "PowerPoint to PDF converts a slide deck into a PDF using LibreOffice on the FlipFile server.",
+    steps: ["Add your .pptx, .ppt or .odp file.", "Click Convert to PDF and watch the progress bar.", "Download the PDF."],
+    faq: [
+      ["Are animations and transitions kept?", "No. A PDF holds still pages, so animations and transitions are not included."],
+      ["Will my fonts look the same?", "Fonts that are not installed on the server may be replaced by similar ones."],
+    ],
+  },
+  "pdf-to-word": {
+    about: "PDF to Word turns a PDF into an editable DOCX file. The conversion is done with LibreOffice on the FlipFile server, so it works best on PDFs made from text documents.",
+    steps: ["Add your PDF.", "Click Convert to Word and watch the progress bar.", "Download the .docx file and open it in Word."],
+    faq: [
+      ["Will the layout match the PDF exactly?", "Not always. Simple documents convert well, but complex layouts, tables and columns may need tidying in Word."],
+      ["Does it work on scanned PDFs?", "Not well. A scan is only a picture of the text, so it needs OCR first."],
+    ],
+  },
+  "ocr-pdf": {
+    about: "OCR PDF reads the text in a scanned PDF and adds an invisible text layer, so the PDF becomes searchable and you can copy its text.",
+    steps: ["Add your scanned PDF.", "Choose the language of the text.", "Click Make searchable and download the result. Long documents can take a minute or more."],
+    faq: [
+      ["Which languages are supported?", "English, Hindi, or both together."],
+      ["What happens to pages that already have text?", "They are left as they are. Only pages without text are read."],
+    ],
+  },
+  "repair-pdf": {
+    about: "Repair PDF tries to fix a PDF that will not open or shows errors, by rebuilding its internal structure.",
+    steps: ["Add the damaged PDF.", "Click Repair PDF.", "Download the repaired file and check that it opens."],
+    faq: [
+      ["Will it recover everything?", "It fixes broken file structure, such as a damaged index. It cannot bring back content that is missing from the file."],
+      ["What if it says the file is too damaged?", "Then not enough of the PDF is left to rebuild. Try getting the file again from where it came from."],
+    ],
+  },
+  "protect-pdf": {
+    about: "Protect PDF locks a PDF with a password, using 256-bit AES encryption, so only people who know the password can open it.",
+    steps: ["Add your PDF.", "Type a password and repeat it.", "Click Protect PDF and download the locked file."],
+    faq: [
+      ["What if I forget the password?", "The PDF cannot be opened without it, and FlipFile cannot recover it. Keep your password and the original file safe."],
+      ["Is my password stored?", "No. The file and password are used to lock the PDF and are then deleted from the server."],
+    ],
+  },
+  "unlock-pdf": {
+    about: "Unlock PDF removes the password from a PDF when you know it, so it opens without asking.",
+    steps: ["Add your protected PDF.", "Type its password. Leave it empty if the PDF opens freely but has editing or printing limits.", "Click Unlock PDF and download the unlocked file."],
+    faq: [
+      ["Can it unlock a PDF if I forgot the password?", "No. FlipFile does not guess or crack passwords."],
+      ["Is it okay to unlock any PDF?", "Only unlock files you own or have permission to change."],
+    ],
+  },
 };

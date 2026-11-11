@@ -8,6 +8,10 @@ import { tools } from "../src/tools.js";
 import { toolContent } from "../src/lib/toolContent.js";
 import { HOME_DESC, HOME_TITLE, PAGE_SEO, SITE_NAME, SITE_URL, canonicalUrl, toolSeo } from "../src/lib/seo.js";
 
+// Tools that need the conversion server stay out of Google until the server is online.
+const serverReady = process.env.VITE_HAS_SERVER === "true" || Boolean(process.env.VITE_API_URL);
+const comingSoon = (t) => Boolean(t.server) && !serverReady;
+
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../dist");
 const template = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 
@@ -35,7 +39,7 @@ function guideHtml(t) {
   );
 }
 
-function render({ route, canonical = route, title, description, heading, jsonLd, tool }) {
+function render({ route, canonical = route, title, description, heading, jsonLd, tool, noindex = false }) {
   const url = canonicalUrl(canonical);
   const image = `${SITE_URL}/social-preview.png`;
   let html = template;
@@ -45,6 +49,7 @@ function render({ route, canonical = route, title, description, heading, jsonLd,
   html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`);
   html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, (_, a, b) => a + url + b);
   meta("name", "description", description);
+  meta("name", "robots", noindex ? "noindex, follow" : "index, follow");
   meta("property", "og:title", title);
   meta("property", "og:description", description);
   meta("property", "og:url", url);
@@ -70,7 +75,7 @@ const pages = [
   ...Object.entries(PAGE_SEO).map(([key, s]) => ({ route: `/${key}`, ...s, heading: s.title.split(" | ")[0], jsonLd: websiteLd })),
   ...tools.map((t) => {
     const seo = toolSeo(t);
-    return { route: `/${t.id}`, ...seo, heading: t.name, tool: t, jsonLd: toolLd(t, canonicalUrl(`/${t.id}`), seo.description) };
+    return { route: `/${t.id}`, ...seo, heading: t.name, tool: t, noindex: comingSoon(t), jsonLd: toolLd(t, canonicalUrl(`/${t.id}`), seo.description) };
   }),
 ];
 
@@ -86,7 +91,7 @@ for (const page of pages) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const listed = pages.filter((p) => p.canonical === undefined);
+const listed = pages.filter((p) => p.canonical === undefined && !p.noindex);
 const sitemap =
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   listed.map((p) => `  <url><loc>${canonicalUrl(p.route)}</loc><lastmod>${today}</lastmod></url>`).join("\n") +

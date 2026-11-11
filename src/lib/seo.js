@@ -17,7 +17,7 @@ export const PAGE_SEO = {
 };
 
 export function toolSeo(tool) {
-  const onDevice = tool.id !== "word-to-pdf"; // Word to PDF is converted on our server
+  const onDevice = !tool.server; // server tools send the file to our server
   return {
     title: `${tool.name} Online Free | FlipFile`,
     description: `${tool.desc} Free online, no sign-up needed.${onDevice ? " Your files stay on your device." : ""}`,

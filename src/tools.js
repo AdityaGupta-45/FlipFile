@@ -22,7 +22,7 @@ export const tools = [
 
   // ---- Convert
   { id: "jpg-to-pdf", name: "JPG to PDF", desc: "Put images into one PDF.", cat: "Convert to PDF", accepts: ["jpg", "png", "webp"], multiple: true, ordered: true, from: "JPG", to: "PDF", live: true, action: "Create PDF" },
-  { id: "word-to-pdf", name: "Word to PDF", desc: "Convert a DOCX file to PDF.", cat: "Convert to PDF", accepts: ["docx"], from: "DOCX", to: "PDF", live: true, action: "Convert to PDF" },
+  { id: "word-to-pdf", name: "Word to PDF", desc: "Convert a DOCX file to PDF.", cat: "Convert to PDF", accepts: ["docx"], server: true, from: "DOCX", to: "PDF", live: true, action: "Convert to PDF" },
   { id: "pdf-to-jpg", name: "PDF to JPG/PNG", desc: "Turn every page into an image.", cat: "Convert from PDF", accepts: ["pdf"], from: "PDF", to: "JPG/PNG", live: true, action: "Convert to images",
     options: [
       { key: "format", label: "Image format", type: "select", default: "jpg", choices: [["jpg", "JPG (smaller files)"], ["png", "PNG (sharper text)"]] },
@@ -70,6 +70,26 @@ export const tools = [
     ] },
   { id: "edit-pdf", name: "Edit PDF", desc: "Add text, drawings, highlights and white-out boxes.", cat: "Edit PDF", accepts: ["pdf"], editor: "edit", from: "PDF", to: "PDF", live: true, action: "Save edited PDF",
     hint: "You can add new content. Text that is already in the PDF cannot be changed." },
+
+  // ---- Phase 3: tools that need the FlipFile conversion server
+  { id: "excel-to-pdf", name: "Excel to PDF", desc: "Convert spreadsheets to PDF.", cat: "Convert to PDF", accepts: ["xlsx", "xls", "ods", "csv"], server: true, from: "XLSX", to: "PDF", live: true, action: "Convert to PDF" },
+  { id: "powerpoint-to-pdf", name: "PowerPoint to PDF", desc: "Convert slide decks to PDF.", cat: "Convert to PDF", accepts: ["pptx", "ppt", "odp"], server: true, from: "PPTX", to: "PDF", live: true, action: "Convert to PDF" },
+  { id: "pdf-to-word", name: "PDF to Word", desc: "Turn a PDF into an editable Word document.", cat: "Convert from PDF", accepts: ["pdf"], server: true, from: "PDF", to: "DOCX", live: true, action: "Convert to Word",
+    hint: "Works best on PDFs made from text documents. Complex layouts and scanned PDFs may not convert well." },
+  { id: "ocr-pdf", name: "OCR PDF", desc: "Make a scanned PDF searchable and copyable.", cat: "Optimize PDF", accepts: ["pdf"], server: true, from: "PDF", to: "PDF", live: true, action: "Make searchable",
+    hint: "Reading the text can take a minute or more for long PDFs.",
+    options: [{ key: "lang", label: "Language of the text", type: "select", default: "eng", choices: [["eng", "English"], ["hin", "Hindi"], ["eng+hin", "English and Hindi"]] }] },
+  { id: "repair-pdf", name: "Repair PDF", desc: "Try to fix a PDF that will not open.", cat: "Optimize PDF", accepts: ["pdf"], server: true, from: "PDF", to: "PDF", live: true, action: "Repair PDF",
+    hint: "Fixes broken file structure. It cannot bring back content that is missing from the file." },
+  { id: "protect-pdf", name: "Protect PDF", desc: "Lock a PDF with a password.", cat: "PDF Security", accepts: ["pdf"], server: true, from: "PDF", to: "PDF", live: true, action: "Protect PDF",
+    hint: "Keep your password safe. If you forget it, nobody can open the PDF.",
+    options: [
+      { key: "password", label: "Password", type: "password", default: "" },
+      { key: "confirm", label: "Repeat the password", type: "password", default: "" },
+    ] },
+  { id: "unlock-pdf", name: "Unlock PDF", desc: "Remove the password from a PDF you can open.", cat: "PDF Security", accepts: ["pdf"], server: true, from: "PDF", to: "PDF", live: true, action: "Unlock PDF",
+    hint: "You need to know the password. This tool does not guess or crack passwords.",
+    options: [{ key: "password", label: "Password (leave empty if the PDF opens freely)", type: "password", default: "" }] },
 
   // ---- Images and audio
   { id: "png-to-jpg", name: "PNG to JPG", desc: "Convert PNG images to JPG.", cat: "Images and Media", accepts: ["png", "webp"], multiple: true, from: "PNG", to: "JPG", live: true, action: "Convert to JPG",

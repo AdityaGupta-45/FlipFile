@@ -217,24 +217,24 @@ async function mp4ToMp3([file], { bitrate }, onProgress) {
   return [{ name: `${base(file.name)}.mp3`, blob: new Blob(parts, { type: "audio/mpeg" }) }];
 }
 
-// Word to PDF runs on the FlipFile server (LibreOffice), so layout, images and tables stay intact.
-function convertOnServer(file, onProgress) {
+// Tools that run on the FlipFile server (LibreOffice, qpdf, ocrmypdf).
+// The server gives no live progress, so after the upload the bar eases toward 92% until the file arrives.
+function serverConvert(tool, file, fields, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     let timer;
-    xhr.open("POST", `${API}/api/convert/word-to-pdf`);
+    xhr.open("POST", `${API}/api/convert/${tool}`);
     xhr.responseType = "blob";
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 35), "Uploading file");
     };
     xhr.upload.onload = () => {
-      // The server gives no live progress, so the bar eases toward 92% until the PDF arrives.
       let p = 35;
-      onProgress(p, "Converting document");
+      onProgress(p, "Converting on the server");
       timer = setInterval(() => {
         p += (92 - p) * 0.05;
-        onProgress(Math.round(p), "Converting document");
+        onProgress(Math.round(p), "Converting on the server");
       }, 400);
     };
     xhr.onload = async () => {
@@ -247,23 +247,43 @@ function convertOnServer(file, onProgress) {
     xhr.onerror = () => {
       clearInterval(timer);
       reject(new Error(
-        import.meta.env.PROD && !API
-          ? "Word to PDF is not available on this site yet. All the other tools work."
+        import.meta.env.PROD && !API && import.meta.env.VITE_HAS_SERVER !== "true"
+          ? "This tool is not available on this site yet. All the other tools work."
           : "Could not reach the conversion server. Start it with: npm run server"
       ));
     };
 
+    // Text fields must come before the file so the server reads them first.
     const form = new FormData();
+    Object.entries(fields).forEach(([k, v]) => form.append(k, v));
     form.append("file", file);
     xhr.send(form);
   });
 }
 
-async function wordToPdf([file], _o, onProgress) {
-  const blob = await convertOnServer(file, onProgress);
-  onProgress(100);
-  return [{ name: `${base(file.name)}.pdf`, blob }];
-}
+const serverTool = (tool, { suffix = "", ext = "pdf", fields = () => ({}), check = () => {} } = {}) =>
+  async ([file], options, onProgress) => {
+    check(options);
+    const blob = await serverConvert(tool, file, fields(options), onProgress);
+    onProgress(100);
+    return [{ name: `${base(file.name)}${suffix}.${ext}`, blob }];
+  };
+
+const wordToPdf = serverTool("word-to-pdf");
+const excelToPdf = serverTool("excel-to-pdf");
+const powerpointToPdf = serverTool("powerpoint-to-pdf");
+const pdfToWord = serverTool("pdf-to-word", { ext: "docx" });
+const repairPdf = serverTool("repair-pdf", { suffix: "-repaired" });
+const ocrPdf = serverTool("ocr-pdf", { suffix: "-searchable", fields: (o) => ({ lang: o.lang }) });
+const unlockPdf = serverTool("unlock-pdf", { suffix: "-unlocked", fields: (o) => ({ password: o.password }) });
+const protectPdf = serverTool("protect-pdf", {
+  suffix: "-protected",
+  fields: (o) => ({ password: o.password }),
+  check: (o) => {
+    if (!o.password) throw new Error("Type a password first.");
+    if (o.password !== o.confirm) throw new Error("The two passwords do not match.");
+  },
+});
 
 // ---------------------------------------------------------------- Phase 1 tools
 
@@ -725,4 +745,11 @@ export const processors = {
   "redact-pdf": redactPdf,
   "extract-images": extractImages,
   "edit-pdf": editPdf,
+  "excel-to-pdf": excelToPdf,
+  "powerpoint-to-pdf": powerpointToPdf,
+  "pdf-to-word": pdfToWord,
+  "ocr-pdf": ocrPdf,
+  "repair-pdf": repairPdf,
+  "protect-pdf": protectPdf,
+  "unlock-pdf": unlockPdf,
 };

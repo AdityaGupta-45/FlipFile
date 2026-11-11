@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { tools } from "../tools.js";
 import { toolSeo } from "../lib/seo.js";
 import { toolContent } from "../lib/toolContent.js";
+import { isComingSoon } from "../lib/server.js";
 import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
 import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
@@ -105,6 +106,23 @@ function Tool({ tool }) {
   if (tool.editor === "organize") ready = ready && pageState.length > 0 && !pageState.every((p) => p.del);
   if (tool.editor && !isPageEditor) ready = ready && editorReady(tool.editor, pageState);
 
+  if (isComingSoon(tool)) {
+    return (
+      <section className="mx-auto max-w-3xl py-8">
+        <Link to="/" className="text-sm text-[var(--muted)]">Back to all tools</Link>
+        <div className="mt-3 flex items-center gap-4">
+          <ToolIcon tool={tool} size={22} />
+          <h1 className="display text-4xl font-extrabold">{tool.name}</h1>
+        </div>
+        <p className="mt-3 text-[var(--muted)]">{tool.desc}</p>
+        <p className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-sm">
+          <strong>Coming soon.</strong> This tool needs the FlipFile conversion server, which is not online yet. All the other tools work now.
+        </p>
+        <ToolGuide tool={tool} />
+      </section>
+    );
+  }
+
   return (
     <section className="mx-auto max-w-3xl py-8">
       <Link to="/" className="text-sm text-[var(--muted)]">Back to all tools</Link>
@@ -182,7 +200,7 @@ function Tool({ tool }) {
             <input type="range" min={o.min} max={o.max} step={o.step} value={values[o.key]} disabled={busy} className="mt-2 w-full"
               onChange={(e) => setValues({ ...values, [o.key]: parseFloat(e.target.value) })} />
           ) : (
-            <input type="text" className={input} value={values[o.key]} disabled={busy}
+            <input type={o.type === "password" ? "password" : "text"} autoComplete={o.type === "password" ? "new-password" : undefined} className={input} value={values[o.key]} disabled={busy}
               onChange={(e) => setValues({ ...values, [o.key]: e.target.value })} />
           )}
         </label>

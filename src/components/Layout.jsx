@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { categories, tools } from "../tools.js";
 import { Logo, ToolIcon } from "./ui.jsx";
+import { isComingSoon } from "../lib/server.js";
 
 const quick = ["merge-pdf", "split-pdf", "compress-pdf"].map((id) => tools.find((t) => t.id === id));
 const linkClass = "rounded-lg px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]";
@@ -27,6 +28,9 @@ function Groups({ groups, onPick, className }) {
             >
               <ToolIcon tool={t} size={16} pad={14} />
               {t.name}
+              {isComingSoon(t) && (
+                <span className="ml-auto rounded bg-[var(--chip)] px-1.5 text-[10px] font-bold text-[#0f1b2d]">Soon</span>
+              )}
             </Link>
           ))}
         </div>
