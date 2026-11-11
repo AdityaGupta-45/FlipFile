@@ -10,23 +10,23 @@ const quick = ["merge-pdf", "split-pdf", "compress-pdf"].map((id) => tools.find(
 const linkClass = "rounded-lg px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]";
 
 const byCategory = (c) => ({ title: c, items: tools.filter((t) => t.cat === c) });
-const convertGroups = ["Convert to PDF", "Convert from PDF", "Images and Media"].map(byCategory);
+const convertGroups = ["Convert to PDF", "Convert from PDF"].map(byCategory);
 const allGroups = categories.filter((c) => c !== "All").map(byCategory).filter((g) => g.items.length);
 
-function Groups({ groups, onPick, className }) {
+function Groups({ groups, onPick, className, large }) {
   return (
     <div className={className}>
       {groups.map((g) => (
         <div key={g.title}>
-          <p className="mb-2 px-2 text-xs font-bold text-[var(--muted)]">{g.title}</p>
+          <p className={`px-2 text-xs font-bold uppercase tracking-wider text-[var(--muted)] ${large ? "mb-3" : "mb-2"}`}>{g.title}</p>
           {g.items.map((t) => (
             <Link
               key={t.id}
               to={`/${t.id}`}
               onClick={onPick}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-[var(--bg)]"
+              className={`flex items-center gap-3 rounded-lg px-2 hover:bg-[var(--bg)] ${large ? "py-2.5 text-[15px]" : "py-2 text-sm"}`}
             >
-              <ToolIcon tool={t} size={16} pad={14} />
+              <ToolIcon tool={t} size={large ? 18 : 16} pad={large ? 18 : 14} />
               {t.name}
               {isComingSoon(t) && (
                 <span className="ml-auto rounded bg-[var(--chip)] px-1.5 text-[10px] font-bold text-[#0f1b2d]">Soon</span>
@@ -40,8 +40,8 @@ function Groups({ groups, onPick, className }) {
 }
 
 // Opens when the cursor hovers over it (or on click/keyboard for touch and keyboard users).
-// Both menus stretch across the whole header, like a mega menu.
-function MegaMenu({ label, groups }) {
+// "wide" menus stretch across the whole header (All tools). Other menus are a card under the button (Convert PDF).
+function MegaMenu({ label, groups, wide }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const timer = useRef(null);
@@ -65,6 +65,7 @@ function MegaMenu({ label, groups }) {
   return (
     <div
       ref={ref}
+      className={wide ? "" : "relative"}
       onMouseEnter={show}
       onMouseLeave={hide}
       onBlur={(e) => { if (!ref.current.contains(e.relatedTarget)) setOpen(false); }}
@@ -79,7 +80,7 @@ function MegaMenu({ label, groups }) {
         <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && wide && (
         <div className="absolute inset-x-0 top-full z-30">
           <div className="border-b border-[var(--line)] bg-[var(--panel)] shadow-xl">
             <div className="mx-auto max-w-7xl px-5 py-6">
@@ -88,6 +89,14 @@ function MegaMenu({ label, groups }) {
                 See all tools
               </Link>
             </div>
+          </div>
+        </div>
+      )}
+
+      {open && !wide && (
+        <div className="absolute right-0 top-full z-30 pt-2">
+          <div className="w-[640px] max-w-[92vw] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6 shadow-xl">
+            <Groups groups={groups} onPick={close} large className="grid grid-cols-2 gap-x-8" />
           </div>
         </div>
       )}
@@ -151,8 +160,8 @@ export function Header() {
           {quick.map((t) => (
             <Link key={t.id} to={`/${t.id}`} className={linkClass}>{t.name}</Link>
           ))}
-          <MegaMenu label="Convert" groups={convertGroups} />
-          <MegaMenu label="All tools" groups={allGroups} />
+          <MegaMenu label="Convert PDF" groups={convertGroups} />
+          <MegaMenu label="All tools" groups={allGroups} wide />
           <ThemeToggle theme={theme} onClick={toggleTheme} />
         </nav>
 
