@@ -1,4 +1,4 @@
-export const categories = ["All", "Organize PDF", "Optimize PDF", "Convert to PDF", "Convert from PDF", "Edit PDF", "PDF Security", "Images and Media"];
+export const categories = ["All", "Organize PDF", "Optimize PDF", "Convert to PDF", "Convert from PDF", "Edit PDF", "PDF Security", "Images and Media", "AI & Workflows"];
 
 const quality = (def) => ({ key: "quality", label: "Quality", type: "range", min: 0.3, max: 1, step: 0.05, default: def });
 
@@ -90,6 +90,14 @@ export const tools = [
   { id: "unlock-pdf", name: "Unlock PDF", desc: "Remove the password from a PDF you can open.", cat: "PDF Security", accepts: ["pdf"], server: true, from: "PDF", to: "PDF", live: true, action: "Unlock PDF",
     hint: "You need to know the password. This tool does not guess or crack passwords.",
     options: [{ key: "password", label: "Password (leave empty if the PDF opens freely)", type: "password", default: "" }] },
+
+  // ---- Phase 4: AI tools (the visitor's own API key) and workflows
+  { id: "summarize-pdf", name: "Summarize PDF", desc: "Get a summary of a PDF, written by an AI of your choice.", cat: "AI & Workflows", accepts: ["pdf"], ai: "summarize", from: "PDF", to: "Summary", live: true,
+    hint: "Uses your own AI key. The text of your PDF is sent from your browser to the AI provider you choose." },
+  { id: "chat-with-pdf", name: "Chat with PDF", desc: "Ask questions about a PDF and get answers with page numbers.", cat: "AI & Workflows", accepts: ["pdf"], ai: "chat", from: "PDF", to: "Answers", live: true,
+    hint: "Uses your own AI key. The text of your PDF is sent from your browser to the AI provider you choose." },
+  { id: "custom-workflows", name: "Custom Workflows", desc: "Chain several PDF tools into one automatic run.", cat: "AI & Workflows", accepts: ["pdf"], multiple: true, ordered: true, workflow: true, from: "PDF", to: "PDF", live: true,
+    hint: "Add one PDF, or several to merge first. Then choose the steps to run, one after the other." },
 
   // ---- Images and audio
   { id: "png-to-jpg", name: "PNG to JPG", desc: "Convert PNG images to JPG.", cat: "Images and Media", accepts: ["png", "webp"], multiple: true, from: "PNG", to: "JPG", live: true, action: "Convert to JPG",

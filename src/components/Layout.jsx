@@ -85,7 +85,7 @@ function MegaMenu({ label, groups, wide }) {
         <div className="absolute inset-x-0 top-full z-30">
           <div className="border-b border-[var(--line)] bg-[var(--panel)] shadow-xl">
             <div className="mx-auto max-w-7xl px-5 py-6">
-              <Groups groups={groups} onPick={close} className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4 xl:grid-cols-7" />
+              <Groups groups={groups} onPick={close} className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4 xl:grid-cols-8" />
               <Link to="/tools" onClick={close} className="mt-5 inline-block px-2 text-sm font-bold text-[var(--accent)]">
                 See all tools
               </Link>

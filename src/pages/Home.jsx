@@ -62,7 +62,7 @@ export default function Home() {
 
       <section>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-          <label className="relative block w-full shrink-0 lg:w-52">
+          <label className="relative block w-full shrink-0 lg:w-44">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden="true" />
             <input
               ref={searchRef}
@@ -80,7 +80,7 @@ export default function Home() {
                 key={c}
                 onClick={() => setCat(c)}
                 aria-pressed={cat === c}
-                className={`shrink-0 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-xl border px-2.5 py-1.5 text-sm transition-colors ${
                   cat === c
                     ? "border-[var(--ink)] bg-[var(--ink)] font-bold text-[var(--bg)]"
                     : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:bg-[var(--soft)]"

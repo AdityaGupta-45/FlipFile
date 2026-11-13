@@ -8,6 +8,7 @@ const pages = {
     body: [
       "Most FlipFile tools run directly in your browser. For those tools, your files are never uploaded anywhere.",
       "Word to PDF is the exception. That file is sent to our conversion server, converted with LibreOffice, and deleted as soon as the PDF is sent back to you.",
+      "The AI tools (Summarize PDF and Chat with PDF) work with your own API key. The text of your PDF is sent straight from your browser to the AI provider you choose. It does not pass through a FlipFile server, and your key is only saved in your browser if you ask for that.",
       "We do not read, keep or share the files you convert.",
     ],
   },

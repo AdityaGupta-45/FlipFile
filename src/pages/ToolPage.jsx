@@ -8,6 +8,8 @@ import { Camera } from "lucide-react";
 import { ToolIcon, usePageTitle } from "../components/ui.jsx";
 import { DiffView, PageEditor, PdfViewer } from "../components/PdfTools.jsx";
 import { VisualEditor, editorReady } from "../components/VisualEditors.jsx";
+import { AiTool } from "../components/AiTools.jsx";
+import WorkflowBuilder from "../components/Workflow.jsx";
 
 const size = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
 const ext = (name) => {
@@ -100,6 +102,7 @@ function Tool({ tool }) {
   const input = "mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2";
   const originalSize = files.reduce((n, f) => n + f.size, 0);
   const hasDiff = results.some((r) => r.diff);
+  const custom = Boolean(tool.viewer || tool.ai || tool.workflow); // these tools have their own screen and button
 
   let ready = files.length >= min;
   if (tool.editor === "delete") ready = ready && pageState.some((p) => p.del) && !pageState.every((p) => p.del);
@@ -185,6 +188,10 @@ function Tool({ tool }) {
         <VisualEditor kind={tool.editor} file={files[0]} state={pageState} onChange={setPageState} />
       )}
       {files.length > 0 && tool.viewer && <PdfViewer file={files[0]} />}
+      {files.length > 0 && tool.ai && (
+        <AiTool key={`${files[0].name}-${files[0].size}-${files[0].lastModified}`} kind={tool.ai} file={files[0]} />
+      )}
+      {files.length > 0 && tool.workflow && <WorkflowBuilder files={files} />}
 
       {files.length > 0 && (tool.options || []).map((o) => (
         <label key={o.key} className="mt-4 block">
@@ -206,7 +213,7 @@ function Tool({ tool }) {
         </label>
       ))}
 
-      {!tool.viewer && (
+      {!custom && (
       <button
         onClick={run}
         disabled={!ready || busy}

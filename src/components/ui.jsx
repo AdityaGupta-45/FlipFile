@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { setMeta } from "../lib/seo.js";
-import { Camera, Crop, EyeOff, ImageDown, Pencil, PenTool, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
+import { Camera, Crop, MessageSquare, Sparkles, Workflow, EyeOff, ImageDown, Pencil, PenTool, Eye, File, FileImage, FileText, GitCompare, Hash, Image, Images, LayoutGrid, Merge, Minimize2, Music, RotateCw, Scissors, Shrink, Trash2, Type, Droplets } from "lucide-react";
 
 export function usePageTitle(title, description) {
   const { pathname } = useLocation();
@@ -41,6 +41,9 @@ const icons = {
   "redact-pdf": EyeOff,
   "extract-images": ImageDown,
   "edit-pdf": Pencil,
+  "summarize-pdf": Sparkles,
+  "chat-with-pdf": MessageSquare,
+  "custom-workflows": Workflow,
 };
 const catColor = {
   "Organize PDF": "#e5484d",
@@ -50,6 +53,7 @@ const catColor = {
   "Edit PDF": "#a855c8",
   "PDF Security": "#3e63dd",
   "Images and Media": "#2f9e6a",
+  "AI & Workflows": "#d6409f",
 };
 
 export function ToolIcon({ tool, size = 24, pad = 24 }) {
@@ -62,5 +66,19 @@ export function ToolIcon({ tool, size = 24, pad = 24 }) {
     >
       <Icon size={size} aria-hidden="true" />
     </span>
+  );
+}
+
+export function ProgressBar({ value, label }) {
+  return (
+    <div className="mt-6" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} aria-label="Progress">
+      <div className="flex justify-between text-sm font-bold">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="mt-2 h-3 overflow-hidden rounded-full bg-[var(--line)]">
+        <div className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-300" style={{ width: `${value}%` }} />
+      </div>
+    </div>
   );
 }

@@ -17,10 +17,10 @@ export const PAGE_SEO = {
 };
 
 export function toolSeo(tool) {
-  const onDevice = !tool.server; // server tools send the file to our server
+  const onDevice = !tool.server && !tool.ai; // server tools send the file to our server, AI tools send its text to an AI provider
   return {
     title: `${tool.name} Online Free | FlipFile`,
-    description: `${tool.desc} Free online, no sign-up needed.${onDevice ? " Your files stay on your device." : ""}`,
+    description: `${tool.desc} Free online, no sign-up needed.${onDevice ? " Your files stay on your device." : ""}${tool.ai ? " Works with your own AI key." : ""}`,
   };
 }
 

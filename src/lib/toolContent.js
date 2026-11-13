@@ -240,4 +240,31 @@ export const toolContent = {
       ["Is it okay to unlock any PDF?", "Only unlock files you own or have permission to change."],
     ],
   },
+  "summarize-pdf": {
+    about: "Summarize PDF reads the text of a PDF and writes a summary with an AI model of your choice. You use your own API key, so you pay the AI provider directly, and FlipFile never sees your key or your document.",
+    steps: ["Add your PDF.", "Choose an AI provider and paste your API key. Tick Remember if you want to keep it in this browser.", "Pick the length, style and language of the summary, then click Summarize.", "Read the summary, copy it or download it as a text file."],
+    faq: [
+      ["Is my PDF uploaded to FlipFile?", "No. The text is read in your browser and sent straight to the AI provider you choose, using your key. It does not pass through a FlipFile server."],
+      ["Where do I get an API key?", "From the website of the AI provider, in your account's API settings. API use is billed by the provider and is separate from a chat subscription."],
+      ["Does it work on scanned PDFs?", "Not yet. The PDF needs real text. A scan is only a picture of the text and needs OCR first."],
+      ["Can the summary be wrong?", "Yes. AI can miss details or make mistakes, so check important facts against the PDF."],
+    ],
+  },
+  "chat-with-pdf": {
+    about: "Chat with PDF lets you ask questions about a PDF and get answers that point to page numbers. It uses an AI model of your choice with your own API key.",
+    steps: ["Add your PDF.", "Choose an AI provider and paste your API key.", "Type a question and press Enter. Ask follow-up questions as you like."],
+    faq: [
+      ["What happens with a very long PDF?", "If the PDF is too long to send in one go, FlipFile sends only the pages that match your question best, and tells you so."],
+      ["Does it remember the chat?", "Only on this page. Closing or reloading the page clears the conversation."],
+      ["Is my key stored?", "Only if you tick Remember. Then it is saved in this browser on this device, and you can remove it with Forget key."],
+    ],
+  },
+  "custom-workflows": {
+    about: "Custom Workflows chains several PDF tools into one run. For example, merge three PDFs, add page numbers, then add a watermark, without downloading anything in between.",
+    steps: ["Add one PDF, or several PDFs to merge first.", "Add steps such as Rotate PDF, Add Page Numbers or Watermark, and set their options. Use the arrows to change the order.", "Click Run workflow and download the final PDF."],
+    faq: [
+      ["Which steps can I use?", "Rotate PDF, Add Page Numbers, Watermark, Compress PDF, Keep only some pages and Remove some pages. More steps will be added."],
+      ["Does it run in my browser?", "Yes. Every step runs on your device and nothing is uploaded."],
+    ],
+  },
 };

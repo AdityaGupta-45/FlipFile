@@ -2,6 +2,7 @@ import { LineCapStyle, PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib"
 import JSZip from "jszip";
 import pdfjs from "./pdfjs.js";
 import { pageRot, viewSize, viewToPdf } from "./geometry.js";
+import { pageLines } from "./pdfText.js";
 import { Mp3Encoder } from "@breezystack/lamejs";
 
 // Every processor takes (files, options, onProgress) and returns [{ name, blob }].
@@ -376,31 +377,6 @@ async function watermark([file], { text, opacity, size, color, angle }, onProgre
   return [{ name: `${base(file.name)}-watermarked.pdf`, blob: pdfBlob(bytes) }];
 }
 
-// Text of one page, grouped into lines.
-async function pageLines(pdf, n) {
-  const page = await pdf.getPage(n);
-  const { items } = await page.getTextContent();
-  const lines = [];
-  let cur = "";
-  let lastY = null;
-  const flush = () => {
-    const t = cur.replace(/\s+/g, " ").trim();
-    if (t) lines.push(t);
-    cur = "";
-  };
-  for (const it of items) {
-    if (!("str" in it)) continue;
-    const y = it.transform[5];
-    if (lastY !== null && Math.abs(y - lastY) > 3) flush();
-    if (cur && !cur.endsWith(" ") && !it.str.startsWith(" ")) cur += " ";
-    cur += it.str;
-    lastY = y;
-  }
-  flush();
-  page.cleanup();
-  return lines;
-}
-
 async function extractText([file], { markers }, onProgress) {
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const parts = [];
@@ -722,6 +698,33 @@ async function editPdf([file], { pageState }, onProgress) {
   return [{ name: `${base(file.name)}-edited.pdf`, blob: pdfBlob(bytes) }];
 }
 
+// ---------------------------------------------------------------- steps used only by Custom Workflows
+
+async function keepPages([file], { pages }, onProgress) {
+  if (!pages.trim()) throw new Error("Type the pages to keep, like 1-3, 5.");
+  const src = await PDFDocument.load(await file.arrayBuffer());
+  const idx = parseRanges(pages, src.getPageCount());
+  const out = await PDFDocument.create();
+  (await out.copyPages(src, idx)).forEach((p) => out.addPage(p));
+  const bytes = await out.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-kept.pdf`, blob: pdfBlob(bytes) }];
+}
+
+async function removePages([file], { pages }, onProgress) {
+  if (!pages.trim()) throw new Error("Type the pages to remove, like 2, 4-6.");
+  const src = await PDFDocument.load(await file.arrayBuffer());
+  const total = src.getPageCount();
+  const drop = new Set(parseRanges(pages, total));
+  const keep = Array.from({ length: total }, (_, i) => i).filter((i) => !drop.has(i));
+  if (!keep.length) throw new Error("At least one page must stay in the PDF.");
+  const out = await PDFDocument.create();
+  (await out.copyPages(src, keep)).forEach((p) => out.addPage(p));
+  const bytes = await out.save();
+  onProgress(100);
+  return [{ name: `${base(file.name)}-trimmed.pdf`, blob: pdfBlob(bytes) }];
+}
+
 export const processors = {
   "merge-pdf": mergePdf,
   "split-pdf": splitPdf,
@@ -752,4 +755,6 @@ export const processors = {
   "repair-pdf": repairPdf,
   "protect-pdf": protectPdf,
   "unlock-pdf": unlockPdf,
+  "step-keep-pages": keepPages,
+  "step-remove-pages": removePages,
 };
